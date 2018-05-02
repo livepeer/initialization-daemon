@@ -35,8 +35,9 @@ const run = async () => {
         // Not connected to TestRPC
         // User must unlock account
 
-        const success = unlock(argv.account, argv.password, web3Wrapper)
-        if (!success) {
+        try {
+            await unlock(argv.account, argv.password, web3Wrapper)
+        } catch (err) {
             abort("Failed to unlock account")
         }
     }
@@ -48,7 +49,7 @@ const run = async () => {
     const roundsManager = new RoundsManagerWrapper(web3Wrapper, roundsManagerAddr, argv.account)
     console.log("RoundsManager Address: ", roundsManagerAddr)
 
-    let roundInitialized 
+    let roundInitialized
     while (true) {
         try {
             roundInitialized = await roundsManager.currentRoundInitialized()
@@ -65,15 +66,19 @@ const run = async () => {
     }
 }
 
-const unlock = async (account, password, web3Wrapper) => {
-    let success = await web3Wrapper.unlockAccount(account, password)
-    if (!success) {
-        // Prompt for password if default password fails
-        password = prompt("Password: ")
+const abort = msg => {
+    console.log(msg || "Error occured")
+    process.exit(1)
+}
 
-        return await web3Wrapper.unlockAccount(account, password)
-    } else {
-        return true
+const unlock = async (account, password, web3Wrapper) => {
+    try {
+        await web3Wrapper.unlockAccount(account, password)
+    } catch (err) {
+        // Prompt for password if default password fails
+        password = prompt("Password: ", {echo: ""})
+
+        await web3Wrapper.unlockAccount(account, password)
     }
 }
 
