@@ -1,86 +1,50 @@
-const path = require("path")
-const Web3Wrapper = require("./lib/web3Wrapper")
-const ControllerWrapper = require("./lib/controllerWrapper")
-const RoundsManagerWrapper = require("./lib/roundsManagerWrapper")
 const Web3 = require("web3")
 const prompt = require("prompt-sync")()
-const sleep = require('system-sleep');
+const BlockWatcher = require("./lib/blockWatcher")
+const RoundInitializer = require("./lib/roundInitializer")
+const TxSigner = require("./lib/txSigner")
 
-const yargsOpts = {
-    alias: {
-        "controller": ["c"],
-        "account": ["a"],
-        "password": ["p"]
-    },
-    configuration: {
-        "parse-numbers": false
-    }
-}
-const argv = require("yargs-parser")(process.argv.slice(2), yargsOpts)
-const provider = new Web3.providers.HttpProvider("http://localhost:8545")
+const argv = require("yargs")
+    .usage("Usage: $0 --rinkeby --provider [provider URL] --account [Ethereum account] --datadir [data directory]")
+    .boolean(["rinkeby"])
+    .string(["provider", "account"])
+    .demandOption(["account", "datadir"])
+    .argv
 
 const run = async () => {
-    if (argv.controller === undefined) {
-        abort("Must pass in the Controller contract address")
-    }
+    const password = prompt(`Password for ${argv.account}: `, { echo: "" })
+    const txSigner = new TxSigner(argv.datadir, argv.account)
+    txSigner.unlock(password)
+    console.log(`Unlocked account ${argv.account}`)
 
-    if (argv.account === undefined) {
-        abort("Must pass in a valid Ethereum account address")
-    }
-
-    const web3Wrapper = new Web3Wrapper(provider)
-    const nodeType = await web3Wrapper.getNodeType()
-
-    if (!nodeType.match(/TestRPC/i)) {
-        // Not connected to TestRPC
-        // User must unlock account
-
-        try {
-            await unlock(argv.account, argv.password, web3Wrapper)
-        } catch (err) {
-            abort("Failed to unlock account")
+    let providerUrl
+    if (argv.provider) {
+        providerUrl = argv.provider
+    } else {
+        if (argv.rinkeby) {
+            providerUrl = "https://rinkeby.infura.io"
+        } else {
+            providerUrl = "https://mainnet.infura.io"
         }
     }
 
-    console.log(`Account ${argv.account} unlocked`)
+    const provider = new Web3.providers.HttpProvider(providerUrl)
+    const blockWatcher = new BlockWatcher(provider)
+    const roundInitializer = new RoundInitializer(provider, blockWatcher, txSigner)
 
-    const controller = new ControllerWrapper(web3Wrapper, argv.controller)
-    const roundsManagerAddr = await controller.getRoundsManagerAddress()
-    const roundsManager = new RoundsManagerWrapper(web3Wrapper, roundsManagerAddr, argv.account)
-    console.log("RoundsManager Address: ", roundsManagerAddr)
+    await roundInitializer.start()
 
-    let roundInitialized
-    while (true) {
-        try {
-            roundInitialized = await roundsManager.currentRoundInitialized()
-            console.log('Rounds Initialized: ', roundInitialized);
+    process.on("SIGINT", async () => {
+        await roundInitializer.stop()
+        txSigner.clear()
 
-            if (!roundInitialized) {
-                let r = await roundsManager.initializeRound()
-                console.log("initialize round: ", r)
-            }
-        } catch (error) {
-            console.log("Error: ", error)
-        }
-        sleep(2000)
-    }
+        console.log("Stopping round initializer...")
+        process.exit(0)
+    })
 }
 
-const abort = msg => {
-    console.log(msg || "Error occured")
-    process.exit(1)
+try {
+    run()
+} catch (err) {
+    console.error(err)
 }
-
-const unlock = async (account, password, web3Wrapper) => {
-    try {
-        await web3Wrapper.unlockAccount(account, password)
-    } catch (err) {
-        // Prompt for password if default password fails
-        password = prompt("Password: ", {echo: ""})
-
-        await web3Wrapper.unlockAccount(account, password)
-    }
-}
-
-
-run().catch(console.log)
