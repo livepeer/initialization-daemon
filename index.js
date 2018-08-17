@@ -1,10 +1,8 @@
-const path = require("path")
 const Web3Wrapper = require("./lib/web3Wrapper")
 const ControllerWrapper = require("./lib/controllerWrapper")
 const RoundsManagerWrapper = require("./lib/roundsManagerWrapper")
 const Web3 = require("web3")
 const prompt = require("prompt-sync")()
-const sleep = require('system-sleep');
 
 const yargsOpts = {
     alias: {
@@ -47,6 +45,7 @@ const run = async () => {
     const controller = new ControllerWrapper(web3Wrapper, argv.controller)
     const roundsManagerAddr = await controller.getRoundsManagerAddress()
     const roundsManager = new RoundsManagerWrapper(web3Wrapper, roundsManagerAddr, argv.account)
+
     console.log("RoundsManager Address: ", roundsManagerAddr)
 
     let roundInitialized
@@ -62,7 +61,10 @@ const run = async () => {
         } catch (error) {
             console.log("Error: ", error)
         }
-        sleep(2000)
+
+        await new Promise(resolve => {
+            setTimeout(resolve, 2000)
+        })
     }
 }
 
