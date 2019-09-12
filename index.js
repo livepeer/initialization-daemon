@@ -3,6 +3,7 @@ const prompt = require("prompt-sync")()
 const BlockWatcher = require("./lib/blockWatcher")
 const RoundInitializer = require("./lib/roundInitializer")
 const TxSigner = require("./lib/txSigner")
+const { EGSGasPricer } = require("./lib/gasPricer")
 
 const argv = require("yargs")
     .usage("Usage: $0 --rinkeby --provider [provider URL] --account [Ethereum account] --datadir [data directory]")
@@ -29,8 +30,9 @@ const run = async () => {
     }
 
     const provider = new Web3.providers.HttpProvider(providerUrl)
+    const gasPricer = new EGSGasPricer()
     const blockWatcher = new BlockWatcher(provider)
-    const roundInitializer = new RoundInitializer(provider, blockWatcher, txSigner)
+    const roundInitializer = new RoundInitializer(provider, blockWatcher, txSigner, gasPricer)
 
     await roundInitializer.start()
 
