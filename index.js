@@ -33,7 +33,7 @@ const run = async () => {
 
     let gasPricer
     if (argv.rinkeby) {
-        gasPricer = new Web3GasPricer()
+        gasPricer = new Web3GasPricer(provider)
     } else {
         gasPricer = new EGSGasPricer()
     }
