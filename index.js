@@ -1,23 +1,22 @@
-const Web3 = require("web3")
 const prompt = require("prompt-sync")()
+const ethers = require("ethers")
 const BlockWatcher = require("./lib/blockWatcher")
 const RoundInitializer = require("./lib/roundInitializer")
 const TxSigner = require("./lib/txSigner")
-const { Web3GasPricer, EGSGasPricer } = require("./lib/gasPricer")
+
+const ROUNDS_MANAGER_ADDRESSES = {
+    1: "0x3984fc4ceeef1739135476f625d36d6c35c40dc3",
+    4: "0x572d1591bD41f50130FD0212058eAe34F1B17290"
+}
 
 const argv = require("yargs")
-    .usage("Usage: $0 --rinkeby --provider [provider URL] --account [Ethereum account] --datadir [data directory]")
+    .usage("Usage: $0 --rinkeby --provider [provider URL] --account [Ethereum account] --datadir [data directory] --roundsManagerAddr [RoundsManager address]")
     .boolean(["rinkeby"])
-    .string(["provider", "account"])
+    .string(["provider", "account", "roundsManagerAddr"])
     .demandOption(["account", "datadir"])
     .argv
 
 const run = async () => {
-    const password = prompt(`Password for ${argv.account}: `, { echo: "" })
-    const txSigner = new TxSigner(argv.datadir, argv.account)
-    txSigner.unlock(password)
-    console.log(`Unlocked account ${argv.account}`)
-
     let providerUrl
     if (argv.provider) {
         providerUrl = argv.provider
@@ -29,17 +28,22 @@ const run = async () => {
         }
     }
 
-    const provider = new Web3.providers.HttpProvider(providerUrl)
+    const provider = new ethers.providers.JsonRpcProvider(providerUrl)
 
-    let gasPricer
-    if (argv.rinkeby) {
-        gasPricer = new Web3GasPricer(provider)
-    } else {
-        gasPricer = new EGSGasPricer()
+    const password = prompt(`Password for ${argv.account}: `, { echo: "" })
+
+    const txSigner = new TxSigner(provider, argv.datadir, argv.account)
+    txSigner.unlock(password)
+    console.log(`Unlocked account ${argv.account}`)
+
+    let roundsManagerAddr = argv.roundsManagerAddr
+    if (!roundsManagerAddr) {
+        const network = await provider.getNetwork()
+        roundsManagerAddr = ROUNDS_MANAGER_ADDRESSES[network.chainId]
     }
 
     const blockWatcher = new BlockWatcher(provider)
-    const roundInitializer = new RoundInitializer(provider, blockWatcher, txSigner, gasPricer)
+    const roundInitializer = new RoundInitializer(provider, roundsManagerAddr, blockWatcher, txSigner)
 
     await roundInitializer.start()
 
