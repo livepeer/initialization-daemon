@@ -6,7 +6,7 @@ const TxSigner = require("./lib/txSigner")
 
 const ROUNDS_MANAGER_ADDRESSES = {
     1: "0x3984fc4ceeef1739135476f625d36d6c35c40dc3",
-    4: "0x572d1591bD41f50130FD0212058eAe34F1B17290"
+    4: "0x6c2A6B5cFDB30DAC34BD54af06611267e66fB07F"
 }
 
 const argv = require("yargs")
