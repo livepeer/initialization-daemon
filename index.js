@@ -11,6 +11,10 @@ const ROUNDS_MANAGER_ADDRESSES = {
         "0x6c2A6B5cFDB30DAC34BD54af06611267e66fB07F",
         // Devnet,
         "0x55cfb784ca12744275d9742B843486225C695e64"
+    ],
+    421611: [
+        // Devnet
+        "0xa3Aa52cE79e85a21d9cCdA705C57e426B160112c"
     ]
 }
 
