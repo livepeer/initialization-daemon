@@ -43,7 +43,7 @@ const run = async () => {
     console.log(`Unlocked account ${argv.account}`)
 
     let roundsManagerAddrs = argv.roundsManagerAddr.split(",")
-    if (roundsManagerAddrs.length == 0) {
+    if (roundsManagerAddrs.length == 0 || roundsManagerAddrs[0] === "") {
         const network = await provider.getNetwork()
         roundsManagerAddrs = ROUNDS_MANAGER_ADDRESSES[network.chainId]
     }
