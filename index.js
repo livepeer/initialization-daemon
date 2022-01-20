@@ -5,14 +5,15 @@ const RoundInitializer = require("./lib/roundInitializer")
 const TxSigner = require("./lib/txSigner")
 
 const ROUNDS_MANAGER_ADDRESSES = {
-    1: "0x3984fc4ceeef1739135476f625d36d6c35c40dc3",
-    4: "0x6c2A6B5cFDB30DAC34BD54af06611267e66fB07F"
+    1: ["0x3984fc4ceeef1739135476f625d36d6c35c40dc3"],
+    4: ["0x6c2A6B5cFDB30DAC34BD54af06611267e66fB07F"]
 }
 
 const argv = require("yargs")
-    .usage("Usage: $0 --rinkeby --provider [provider URL] --account [Ethereum account] --datadir [data directory] --roundsManagerAddr [RoundsManager address]")
+    .usage("Usage: $0 --rinkeby --provider [provider URL] --account [Ethereum account] --datadir [data directory] --roundsManagerAddr [RoundsManager addresses]")
     .boolean(["rinkeby"])
     .string(["provider", "account", "roundsManagerAddr"])
+    .default("roundsManagerAddr", "")
     .demandOption(["account", "datadir"])
     .argv
 
@@ -36,14 +37,14 @@ const run = async () => {
     txSigner.unlock(password)
     console.log(`Unlocked account ${argv.account}`)
 
-    let roundsManagerAddr = argv.roundsManagerAddr
-    if (!roundsManagerAddr) {
+    let roundsManagerAddrs = argv.roundsManagerAddr.split(",")
+    if (roundsManagerAddrs.length == 0) {
         const network = await provider.getNetwork()
-        roundsManagerAddr = ROUNDS_MANAGER_ADDRESSES[network.chainId]
+        roundsManagerAddrs = ROUNDS_MANAGER_ADDRESSES[network.chainId]
     }
 
     const blockWatcher = new BlockWatcher(provider)
-    const roundInitializer = new RoundInitializer(provider, roundsManagerAddr, blockWatcher, txSigner)
+    const roundInitializer = new RoundInitializer(provider, roundsManagerAddrs, blockWatcher, txSigner)
 
     await roundInitializer.start()
 
