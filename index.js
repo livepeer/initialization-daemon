@@ -17,7 +17,8 @@ const ROUNDS_MANAGER_ADDRESSES = {
         "0xa3Aa52cE79e85a21d9cCdA705C57e426B160112c",
         // Testnet
         "0x3BEc08BA9D8A5b44F5C5E38F654b3efE73555d58"
-    ]
+    ],
+    42161: ["0xdd6f56DcC28D3F5f27084381fE8Df634985cc39f"]
 }
 
 const argv = require("yargs")
