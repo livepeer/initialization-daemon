@@ -3,6 +3,7 @@ const ethers = require("ethers");
 const BlockWatcher = require("./lib/blockWatcher");
 const RoundInitializer = require("./lib/roundInitializer");
 const TxSigner = require("./lib/txSigner");
+const SimpleBlockWatcher = require("./lib/simpleBlockWatcher");
 
 const ROUNDS_MANAGER_ADDRESSES = {
   1: ["0x3984fc4ceeef1739135476f625d36d6c35c40dc3"],
@@ -23,9 +24,9 @@ const ROUNDS_MANAGER_ADDRESSES = {
 
 const argv = require("yargs")
   .usage(
-    "Usage: $0 --rinkeby --provider [provider URL] --account [Ethereum account] --password [Ethereum account password] --datadir [data directory] --roundsManagerAddr [RoundsManager addresses]"
+    "Usage: $0 --rinkeby --provider [provider URL] --account [Ethereum account] --password [Ethereum account password] --datadir [data directory] --roundsManagerAddr [RoundsManager addresses] --pollingInterval [block polling interval in ms] --noBlockstream"
   )
-  .boolean(["rinkeby"])
+  .boolean(["rinkeby", "noBlockstream"])
   .string(["provider", "account", "roundsManagerAddr", "password"])
   .default("roundsManagerAddr", "")
   .demandOption(["account", "datadir"])
@@ -58,7 +59,9 @@ const run = async () => {
     roundsManagerAddrs = ROUNDS_MANAGER_ADDRESSES[network.chainId];
   }
 
-  const blockWatcher = new BlockWatcher(provider);
+  const blockWatcher = argv.noBlockstream
+    ? new SimpleBlockWatcher(provider, argv.pollingInterval)
+    : new BlockWatcher(provider, argv.pollingInterval);
   const roundInitializer = new RoundInitializer(
     provider,
     roundsManagerAddrs,
